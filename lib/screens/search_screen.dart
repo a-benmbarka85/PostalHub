@@ -109,7 +109,18 @@ class _SearchScreenState extends State<SearchScreen> {
                 focusNode: _focusNode,
                 textInputAction: TextInputAction.search,
                 onSubmitted: _search,
-                decoration: AppStyles.searchInputDecoration,
+                decoration: AppStyles.searchInputDecoration.copyWith(
+                  suffixIcon: _controller.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _controller.clear();
+                            setState(() {});
+                          },
+                        ),
+                ),
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: AppStyles.spacingSm),
               if (_recent.isNotEmpty)
@@ -161,10 +172,23 @@ class _SearchScreenState extends State<SearchScreen> {
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(AppStyles.spacingLg),
-            child: Text(
-              'No hem trobat cap població per «$_lastQuery»',
-              textAlign: TextAlign.center,
-              style: AppStyles.bodySecondary,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.search_off, size: 56, color: AppStyles.textSecondary),
+                const SizedBox(height: AppStyles.spacingMd),
+                Text(
+                  'No hem trobat cap població per «$_lastQuery»',
+                  textAlign: TextAlign.center,
+                  style: AppStyles.titleMedium,
+                ),
+                const SizedBox(height: AppStyles.spacingSm),
+                Text(
+                  'Prova amb un altre codi postal o nom.',
+                  textAlign: TextAlign.center,
+                  style: AppStyles.bodySecondary,
+                ),
+              ],
             ),
           ),
         );

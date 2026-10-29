@@ -9,10 +9,11 @@ class InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: AppStyles.cardBackground,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppStyles.cardBackground,
         borderRadius: BorderRadius.circular(AppStyles.radiusMd),
+        boxShadow: AppStyles.cardShadow,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppStyles.spacingMd),

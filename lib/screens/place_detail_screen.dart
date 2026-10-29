@@ -38,6 +38,19 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return weatherResponseFromJson(response.body);
   }
 
+  IconData _weatherIcon(int? code) {
+    if (code == null) return Icons.help_outline;
+    if (code == 0) return Icons.wb_sunny;
+    if (code >= 1 && code <= 3) return Icons.wb_cloudy;
+    if (code == 45 || code == 48) return Icons.foggy;
+    if (code >= 51 && code <= 67) return Icons.umbrella;
+    if (code >= 71 && code <= 77) return Icons.ac_unit;
+    if (code >= 80 && code <= 82) return Icons.grain;
+    if (code == 85 || code == 86) return Icons.snowing;
+    if (code >= 95 && code <= 99) return Icons.thunderstorm;
+    return Icons.help_outline;
+  }
+
   String _weatherDescription(int? code) {
     if (code == null) return 'Desconegut';
     if (code == 0) return 'Cielo despejado';
@@ -69,12 +82,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             children: [
               InfoCard(
                 children: [
-                  _infoRow('Provincia', place.admin2),
-                  _infoRow('Comunitat', place.admin1),
+                  _infoRow(Icons.map, 'Provincia', place.admin2),
+                  _infoRow(Icons.flag, 'Comunitat', place.admin1),
                   if (place.population != null)
-                    _infoRow('Habitants', place.population.toString()),
-                  _infoRow('Latitud', place.latitude.toString()),
-                  _infoRow('Longitud', place.longitude.toString()),
+                    _infoRow(Icons.people, 'Habitants', place.population.toString()),
+                  _infoRow(Icons.my_location, 'Latitud', place.latitude.toStringAsFixed(5)),
+                  _infoRow(Icons.my_location, 'Longitud', place.longitude.toStringAsFixed(5)),
                 ],
               ),
               const SizedBox(height: AppStyles.spacingMd),
@@ -84,7 +97,13 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 spacing: AppStyles.spacingSm,
                 runSpacing: AppStyles.spacingSm,
                 children: (place.postcodes ?? [])
-                    .map((c) => Chip(label: Text(c)))
+                    .map(
+                      (c) => Chip(
+                        label: Text(c),
+                        backgroundColor: AppStyles.primaryLight.withValues(alpha: 0.15),
+                        side: const BorderSide(color: AppStyles.primaryLight),
+                      ),
+                    )
                     .toList(),
               ),
               if ((place.postcodes ?? []).isEmpty)
@@ -110,9 +129,27 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   }
                   return InfoCard(
                     children: [
-                      _infoRow('Temperatura', '${current.temperature2m?.toStringAsFixed(1) ?? '-'} °C'),
-                      _infoRow('Vent', '${current.windSpeed10m?.toStringAsFixed(1) ?? '-'} km/h'),
-                      _infoRow('Cel', _weatherDescription(current.weatherCode)),
+                      Row(
+                        children: [
+                          Icon(_weatherIcon(current.weatherCode), size: 40, color: AppStyles.weather),
+                          const SizedBox(width: AppStyles.spacingMd),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${current.temperature2m?.toStringAsFixed(1) ?? '-'} °C',
+                                style: AppStyles.titleLarge,
+                              ),
+                              Text(
+                                _weatherDescription(current.weatherCode),
+                                style: AppStyles.bodySecondary,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppStyles.spacingSm),
+                      _infoRow(Icons.air, 'Vent', '${current.windSpeed10m?.toStringAsFixed(1) ?? '-'} km/h'),
                     ],
                   );
                 },
@@ -124,14 +161,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppStyles.spacingXs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 18, color: AppStyles.textSecondary),
+          const SizedBox(width: AppStyles.spacingSm),
           SizedBox(
-            width: 110,
+            width: 90,
             child: Text(label, style: AppStyles.bodySecondary),
           ),
           Expanded(child: Text(value, style: AppStyles.body)),

@@ -10,6 +10,7 @@ class AppStyles {
   static const Color textSecondary = Color(0xFF5C6B7A);
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF2E7D32);
+  static const Color weather = Color(0xFF0277BD);
 
   static const double spacingXs = 4.0;
   static const double spacingSm = 8.0;
@@ -20,6 +21,14 @@ class AppStyles {
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
+
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Color(0x1A000000),
+      blurRadius: 8,
+      offset: Offset(0, 2),
+    ),
+  ];
 
   static const TextStyle titleLarge = TextStyle(
     fontSize: 22,
