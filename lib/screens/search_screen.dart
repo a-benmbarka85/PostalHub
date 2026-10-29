@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/place.dart';
 import '../models/search_response.dart';
 import '../styles/app_styles.dart';
+import '../utils/api_error.dart';
 import '../widgets/place_card.dart';
 import '../widgets/recent_searches.dart';
 import 'place_detail_screen.dart';
@@ -34,7 +37,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  Future<void> _search(String term) async {
+  Future<void> _search(String term, {int attempt = 0}) async {
     term = term.trim();
     if (term.isEmpty) return;
 
@@ -49,9 +52,9 @@ class _SearchScreenState extends State<SearchScreen> {
         'https://geocoding-api.open-meteo.com/v1/search'
         '?name=${Uri.encodeComponent(term)}&language=ca&countryCode=ES',
       );
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
-        throw Exception('Error del servidor (${response.statusCode})');
+        throw HttpException('HTTP (${response.statusCode})');
       }
       final data = searchResponseFromJson(response.body);
       final list = data.results;
@@ -67,9 +70,13 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       }
     } catch (e) {
+      if (attempt < 2) {
+        await Future.delayed(Duration(seconds: 1 << attempt));
+        return _search(term, attempt: attempt + 1);
+      }
       setState(() {
         _state = _SearchState.error;
-        _errorMessage = e.toString();
+        _errorMessage = errorMessage(e);
       });
     }
   }
@@ -202,9 +209,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 const Icon(Icons.wifi_off, size: 48, color: AppStyles.error),
                 const SizedBox(height: AppStyles.spacingMd),
                 Text(
-                  _errorMessage != null
-                      ? 'Hi ha hagut un error en la connexió. Torna-ho a provar.'
-                      : 'Hi ha hagut un error en la connexió. Torna-ho a provar.',
+                  _errorMessage ?? 'Hi ha hagut un error. Torna-ho a provar.',
                   textAlign: TextAlign.center,
                   style: AppStyles.bodySecondary,
                 ),

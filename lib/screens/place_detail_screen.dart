@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/place.dart';
 import '../models/weather_response.dart';
 import '../styles/app_styles.dart';
+import '../utils/api_error.dart';
 import '../widgets/info_card.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
@@ -31,11 +36,21 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       '?latitude=${place.latitude}&longitude=${place.longitude}'
       '&current=temperature_2m,weather_code,wind_speed_10m',
     );
-    final response = await http.get(uri);
-    if (response.statusCode != 200) {
-      throw Exception('Error del servidor (${response.statusCode})');
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        final response = await http.get(uri).timeout(const Duration(seconds: 10));
+        if (response.statusCode != 200) {
+          throw HttpException('HTTP (${response.statusCode})');
+        }
+        return weatherResponseFromJson(response.body);
+      } catch (e) {
+        if (attempt == 2) {
+          throw Exception(errorMessage(e));
+        }
+        await Future.delayed(Duration(seconds: 1 << attempt));
+      }
     }
-    return weatherResponseFromJson(response.body);
+    throw Exception(errorMessage(Exception('unknown')));
   }
 
   IconData _weatherIcon(int? code) {
@@ -64,13 +79,39 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return 'Desconegut';
   }
 
+  Future<void> _openMap() async {
+    final place = widget.place;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _shareLocation() async {
+    final place = widget.place;
+    final text =
+        '${place.name} (${place.admin2}, ${place.admin1})\n'
+        'Lat: ${place.latitude}, Lon: ${place.longitude}\n'
+        'https://www.google.com/maps/search/?api=1&query=${place.latitude},${place.longitude}';
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Ubicació copiada al porta-retalls')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final place = widget.place;
     return Scaffold(
       backgroundColor: AppStyles.background,
       appBar: AppBar(
-        title: Text('🐧 ${place.name}'),
+        title: Hero(
+          tag: 'place-${place.id}',
+          child: Text('🐧 ${place.name}'),
+        ),
         backgroundColor: AppStyles.primary,
         foregroundColor: Colors.white,
       ),
@@ -88,6 +129,26 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                     _infoRow(Icons.people, 'Habitants', place.population.toString()),
                   _infoRow(Icons.my_location, 'Latitud', place.latitude.toStringAsFixed(5)),
                   _infoRow(Icons.my_location, 'Longitud', place.longitude.toStringAsFixed(5)),
+                ],
+              ),
+              const SizedBox(height: AppStyles.spacingMd),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _openMap,
+                      icon: const Icon(Icons.map),
+                      label: const Text('Obrir al mapa'),
+                    ),
+                  ),
+                  const SizedBox(width: AppStyles.spacingSm),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _shareLocation,
+                      icon: const Icon(Icons.share),
+                      label: const Text('Compartir'),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppStyles.spacingMd),
@@ -119,7 +180,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                   }
                   if (snapshot.hasError) {
                     return Text(
-                      'No s\'ha pogut carregar el temps. Torna-ho a provar més tard.',
+                      snapshot.error?.toString().replaceFirst('Exception: ', '') ??
+                          'No s\'ha pogut carregar el temps. Torna-ho a provar més tard.',
                       style: AppStyles.bodySecondary,
                     );
                   }

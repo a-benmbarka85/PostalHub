@@ -7,7 +7,7 @@ class AppStyles {
   static const Color background = Color(0xFFF5F7FA);
   static const Color cardBackground = Colors.white;
   static const Color textPrimary = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF5C6B7A);
+  static const Color textSecondary = Color(0xFF4A5568);
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF2E7D32);
   static const Color weather = Color(0xFF0277BD);
